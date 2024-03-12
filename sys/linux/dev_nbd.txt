@@ -1,0 +1,32 @@
+# Copyright 2018 syzkaller project authors. All rights reserved.
+# Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
+
+include <uapi/linux/fcntl.h>
+include <uapi/linux/netlink.h>
+include <uapi/linux/genetlink.h>
+include <uapi/linux/nbd.h>
+include <uapi/linux/nbd-netlink.h>
+
+resource fd_nbd[fd_block]
+
+syz_open_dev$ndb(dev ptr[in, string["/dev/nbd#"]], id proc[0, 1], flags flags[open_flags]) fd_nbd
+
+ioctl$NBD_DISCONNECT(fd fd_nbd, cmd const[NBD_DISCONNECT])
+ioctl$NBD_CLEAR_SOCK(fd fd_nbd, cmd const[NBD_CLEAR_SOCK])
+ioctl$NBD_SET_BLKSIZE(fd fd_nbd, cmd const[NBD_SET_BLKSIZE], arg intptr)
+ioctl$NBD_SET_SIZE(fd fd_nbd, cmd const[NBD_SET_SIZE], arg intptr)
+ioctl$NBD_SET_SIZE_BLOCKS(fd fd_nbd, cmd const[NBD_SET_SIZE_BLOCKS], arg intptr)
+ioctl$NBD_SET_TIMEOUT(fd fd_nbd, cmd const[NBD_SET_TIMEOUT], arg intptr)
+ioctl$NBD_SET_FLAGS(fd fd_nbd, cmd const[NBD_SET_FLAGS], arg intptr)
+ioctl$NBD_DO_IT(fd fd_nbd, cmd const[NBD_DO_IT])
+
+write$nbd(fd int32, data ptr[in, nbd_reply], size len[data])
+
+nbd_reply {
+	magic		const[NBD_REPLY_MAGIC, int32be]
+	error		bool32
+	handle_tag	int16[0:4]
+	handle_hwq	int16[0:4]
+	handle_cookie	int32[1:4]
+	payload		array[int8]
+}

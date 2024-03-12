@@ -1,0 +1,84 @@
+include <usb/class/usblp.c>
+include <uapi/linux/usb/g_printer.h>
+include <uapi/linux/lp.h>
+include <uapi/linux/if_tun.h>
+include <uapi/linux/usb/cdc-wdm.h>
+
+################################## printer ##################################
+resource fd_printer[fd]
+
+# printer_io_operations: printer gadget side
+openat$printer(fd const[AT_FDCWD], file ptr[in, string["/dev/printer#"]], flags flags[open_flags], mode const[0]) fd_printer
+
+write$printer(fd fd_printer, data buffer[in], len bytesize[data])
+read$printer(fd fd_printer, data buffer[out], len bytesize[data])
+
+ioctl$GADGET_GET_PRINTER_STATUS(fd fd_printer, cmd const[GADGET_GET_PRINTER_STATUS], arg intptr)
+ioctl$GADGET_SET_PRINTER_STATUS(fd fd_printer, cmd const[GADGET_SET_PRINTER_STATUS], arg intptr)
+
+# usblp_fops: printer host side
+resource fd_lp[fd]
+openat$lp(fd const[AT_FDCWD], file ptr[in, string["/dev/usb/lp#"]], flags flags[open_flags], mode const[0]) fd_lp
+
+write$lp(fd fd_lp, data buffer[in], len bytesize[data])
+read$lp(fd fd_lp, data buffer[out], len bytesize[data])
+
+ioctl$IOCNR_GET_DEVICE_ID(fd fd_lp, cmd const[IOCNR_GET_DEVICE_ID], arg ptr[out, intptr])
+ioctl$IOCNR_GET_PROTOCOLS(fd fd_lp, cmd const[IOCNR_GET_PROTOCOLS], arg ptr[out, intptr])
+ioctl$IOCNR_SET_PROTOCOL(fd fd_lp, cmd const[IOCNR_SET_PROTOCOL], arg intptr[USBLP_FIRST_PROTOCOL:USBLP_LAST_PROTOCOL])
+ioctl$IOCNR_HP_SET_CHANNEL(fd fd_lp, cmd const[IOCNR_HP_SET_CHANNEL], arg intptr[0:16])
+ioctl$IOCNR_GET_BUS_ADDRESS(fd fd_lp, cmd const[IOCNR_GET_BUS_ADDRESS], arg ptr[out, intptr])
+ioctl$IOCNR_GET_VID_PID(fd fd_lp, cmd const[IOCNR_GET_VID_PID], arg ptr[out, intptr])
+ioctl$IOCNR_SOFT_RESET(fd fd_lp, cmd const[IOCNR_SOFT_RESET], arg intptr)
+ioctl$LPGETSTATUS(fd fd_lp, cmd const[LPGETSTATUS], arg ptr[out, intptr])
+ioctl$LPABORT(fd fd_lp, cmd const[LPABORT], arg intptr)
+
+################################## tap ##################################
+# tap_fops
+resource fd_tap[fd]
+openat$tap(fd const[AT_FDCWD], file ptr[in, string["/dev/tap##"]], flags flags[open_flags], mode const[0]) fd_tap
+
+ioctl$TAPSETIFF(fd fd_tap, cmd const[TUNSETIFF], arg ptr[in, flags[tap_setiff_flags, int16]])
+ioctl$TAPGETIFF(fd fd_tap, cmd const[TUNGETIFF], arg ptr[out, intptr])
+ioctl$TAPSETQUEUE(fd fd_tap, cmd const[TUNSETQUEUE], arg flags[tap_queue_flags])
+ioctl$TAPGETFEATURES(fd fd_tap, cmd const[TUNGETFEATURES], arg ptr[out, intptr])
+ioctl$TAPSETSNDBUF(fd fd_tap, cmd const[TUNSETSNDBUF], arg ptr[in, intptr])
+ioctl$TAPGETVNETHDRSZ(fd fd_tap, cmd const[TUNGETVNETHDRSZ], arg ptr[out, intptr])
+ioctl$TAPSETVNETHDRSZ(fd fd_tap, cmd const[TUNSETVNETHDRSZ], arg ptr[in, intptr])
+ioctl$TAPGETVNETLE(fd fd_tap, cmd const[TUNGETVNETLE], arg ptr[out, intptr])
+ioctl$TAPSETVNETLE(fd fd_tap, cmd const[TUNSETVNETLE], arg ptr[in, intptr])
+ioctl$TAPGETVNETBE(fd fd_tap, cmd const[TUNGETVNETBE], arg ptr[out, intptr])
+ioctl$TAPSETVNETBE(fd fd_tap, cmd const[TUNSETVNETBE], arg ptr[in, intptr])
+ioctl$TAPSETOFFLOAD(fd fd_tap, cmd const[TUNSETOFFLOAD], arg ptr[in, intptr])
+ioctl$TAPSIOCGIFHWADDR(fd fd_tap, cmd const[SIOCGIFHWADDR], arg ptr[out, intptr])
+ioctl$TAPSIOCSIFHWADDR(fd fd_tap, cmd const[SIOCSIFHWADDR], arg ptr[in, intptr])
+
+tap_queue_flags = IFF_ATTACH_QUEUE, IFF_DETACH_QUEUE
+tap_setiff_flags = IFF_NO_PI, IFF_TAP
+
+################################## cdc-wdm ##################################
+# wdm_fops
+resource fd_wdm[fd]
+openat$wdm(fd const[AT_FDCWD], file ptr[in, string["/dev/wdm#"]], flags flags[open_flags], mode const[0]) fd_wdm
+
+write$wdm_fops(fd fd_wdm, data buffer[in], len bytesize[data])
+read$wdm_fops(fd fd_wdm, data buffer[out], len bytesize[data])
+
+ioctl$IOCTL_WDM_MAX_COMMAND(fd fd_wdm, cmd const[IOCTL_WDM_MAX_COMMAND], arg ptr[out, intptr])
+
+################################## comedi ##################################
+# comedi_fops
+resource fd_comedi[fd]
+openat$comedi(fd const[AT_FDCWD], file ptr[in, string["/dev/comedi#"]], flags flags[open_flags], mode const[0]) fd_comedi
+
+write$comedi(fd fd_comedi, data buffer[in], len bytesize[data])
+read$comedi(fd fd_comedi, data buffer[out], len bytesize[data])
+mmap$comedi(addr vma, len len[addr], prot flags[mmap_prot], flags flags[mmap_flags], fd fd_dsp, offset const[0])
+
+################################## general ##################################
+# general
+resource fd_general[fd]
+openat$general(fd const[AT_FDCWD], file ptr[in, string["/dev/general#"]], flags flags[open_flags], mode const[0]) fd_general
+
+write$general(fd fd_general, data buffer[in], len bytesize[data])
+read$general(fd fd_general, data buffer[out], len bytesize[data])

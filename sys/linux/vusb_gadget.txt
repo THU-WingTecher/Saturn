@@ -1,0 +1,135 @@
+include <linux/usb/ch9.h>
+include <usbgx.h>
+
+# remove USBG_F_HID, USBG_F_UAC2, USBG_F_UVC, USBG_F_FFS temporaily
+func_type_flags = USBG_F_SERIAL, USBG_F_ACM, USBG_F_OBEX, USBG_F_ECM, USBG_F_SUBSET, USBG_F_NCM, USBG_F_EEM, USBG_F_RNDIS, USBG_F_PHONET, USBG_F_MASS_STORAGE, USBG_F_MIDI, USBG_F_PRINTER, USBG_F_LOOPBACK
+bm_attr_flags = 0x80, 0xa0, 0xc0, 0xe0
+packet_size_flags = 8, 16, 32, 64
+bcd_usb_flags = 0x110, 0x200, 0x210, 0x300, 0x310, 0x320
+
+# MAX_CONFIG_NUM 4
+
+usb_gadget_device {
+	bcdUSB			flags[bcd_usb_flags, int16]
+	bDeviceClass		int8
+	bDeviceSubClass		int8
+	bDeviceProtocol		int8
+	bMaxPacketSize0		flags[packet_size_flags, int8]
+	idVendor		int16
+	idProduct		int16
+	bcdDevice		int16
+	bmAttributes		flags[bm_attr_flags, int8]
+	bMaxPower		int8[0:254, 2]
+# padding size 2
+	bNumConfigurations	len[configs, int32]
+# padding size 4
+	configs			array[usbg_func_config, 1:2]
+}
+
+usbg_func_config {
+	f_type	flags[func_type_flags, int8]
+# 2 6 32
+	f_attrs	usbg_function_attr
+}
+
+usbg_function_attr [
+	serial_null_attr	const[0xffff, int32]
+# net: ECM, ECM subset, NCM, EEM, and RNDIS
+	net_null_attr		const[0xffff, int32]
+	obex_null_attr		const[0xffff, int32]
+	phonet_null_attr	const[0xffff, int32]
+	ms_null_attr		const[0xffff, int32]
+	midi_null_attr		const[0xffff, int32]
+	printer_null_attr	const[0xffff, int32]
+	loopback_null_attr	const[0xffff, int32]
+# 	hid_attr	usbg_f_hid_attrs
+	midi_attr		usbg_f_midi_attrs
+	ms_attr			usbg_f_ms_attrs
+	net_attr		usbg_f_net_attrs
+# 	printer_attr	usbg_f_printer_attrs
+# 	loopback_attr	usbg_f_loopback_attrs
+#	uvc_attr usbg_f_uvc_attrs
+# 	uac2_attr usbg_f_uac2_attrs
+]
+
+hid_func_config {
+	f_type	const[USBG_F_HID, int8]
+# 2 6 32
+	f_attrs	usbg_f_hid_attrs
+}
+
+hid_gadget_device {
+	bcdUSB			flags[bcd_usb_flags, int16]
+	bDeviceClass		int8
+	bDeviceSubClass		int8
+	bDeviceProtocol		int8
+	bMaxPacketSize0		flags[packet_size_flags, int8]
+	idVendor		int16
+	idProduct		int16
+	bcdDevice		int16
+	bmAttributes		flags[bm_attr_flags, int8]
+	bMaxPower		int8[0:254, 2]
+# padding size 2
+	bNumConfigurations	len[configs, int32]
+# padding size 4
+	configs			array[hid_func_config, 1:2]
+}
+
+usbg_f_hid_report_desc {
+	desc	ptr[in, hid_descriptor_report]
+	len	const[0, int32]
+}
+
+usbg_f_hid_attrs {
+	dev		int64
+	protocol	int32[0:1]
+	report_desc	usbg_f_hid_report_desc
+	report_length	int32[8:16, 8]
+	subclass	int32[0:1]
+}
+
+usbg_f_midi_attrs {
+	index		int32[0:7]
+	id		ptr[in, int8]
+	in_ports	int32[0:15]
+	out_ports	int32[0:15]
+	buflen		int32
+	qlen		int32
+}
+
+usbg_f_ms_lun_attrs {
+	id		int32
+	cdrom		bool8
+	ro		bool8
+	nofua		bool8
+	removable	bool8
+	file		ptr[in, filename]
+}
+
+usbg_f_ms_attrs {
+	stall	bool8
+	uluns	int32[0:7]
+	luns	ptr[in, array[usbg_f_ms_lun_attrs, 1:4]]
+}
+
+# brief Attributes for ECM, ECM subset, NCM, EEM, and RNDIS USB functions
+
+usbg_f_net_attrs {
+	dev_addr	mac_addr
+	host_addr	mac_addr
+	ifname		ptr[in, int8]
+	qmult		int32
+}
+
+# usbg_f_printer_attrs {
+# 	pnp_string	ptr[in, int8]
+# 	q_len		int32
+# }
+
+# usbg_f_loopback_attrs {
+# 	buflen	int32
+# 	qlen	int32
+# }
+
+syz_attach_gadget(dev ptr[in, usb_gadget_device], uid int32)
+syz_attach_gadget$hid(dev ptr[in, hid_gadget_device], uid int32)
